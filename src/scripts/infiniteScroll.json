@@ -1,0 +1,12 @@
+{
+  "name": "infiniteScroll",
+  "title": "infinite scroll",
+  "description": "adds infinite scroll to cohost",
+  "preferences": {
+    "enabled": true,
+    "options": {
+    }
+  },
+  "js": true,
+  "css": false
+}

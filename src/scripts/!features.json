@@ -2,6 +2,7 @@
   "horizontal",
   "followers",
   "fixComments",
+  "infiniteScroll",
   "popoverComments",
   "collapseComments",
   "popoverNotifications",
