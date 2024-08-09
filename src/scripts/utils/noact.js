@@ -14,6 +14,13 @@ const svgNs = [
   'polygon','polyline','radialGradient','rect','set','stop','svg','symbol','text','textPath','use','view'
 ]
 
+const childHandler = function(child) {
+  if (!child) return;
+  if (typeof child === 'object' && 'nodeType' in child) this.append(child);
+  else if (typeof child === 'object') this.append(noact(child));
+  else this.append(document.createTextNode(child));
+}
+
 /**
  * simultaneously the best and worst replacement for react, jquery, innerHTML, you name it
  * @param {object} obj - element-like object. all properties except `tag` and `children` are set as properties on the element.
@@ -49,8 +56,8 @@ export const noact = obj => {
     }
 
     if ('dataset' in obj) Object.keys(obj.dataset).forEach(key => el.dataset[key] = obj.dataset[key]);
-    if ('children' in obj && obj.children.constructor.name === 'Array') {
-      obj.children.flat(Infinity).forEach(child => { // some implementations of the function use nesting arrays as children, so they need to be flattened
+    if ('children' in obj && obj.children !== null) {
+      [obj.children].flat(Infinity).forEach(child => { // make all children arrays. additionally, some implementations of the function use nesting arrays as children, so they need to be flattened anyways
         if (!child) return;
         if (typeof child === 'object' && 'nodeType' in child) el.append(child);
         else if (typeof child === 'object') el.append(noact(child));

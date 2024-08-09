@@ -1,14 +1,16 @@
 import { mutationManager } from './utils/mutation.js';
 import { noact } from './utils/noact.js';
-import { postBoxTheme } from './utils/apiFetch.js';
+import { postBoxTheme, displayPrefs } from './utils/apiFetch.js';
 import { managedProjects } from './utils/user.js';
-import { avatar8 } from './utils/elements.js';
-import { parseMd } from './utils/markdown.js';
+import { avatar8, embeddedAsk, audioPlayer } from './utils/elements.js';
+import { parseMd, parseMdEmbed } from './utils/markdown.js';
+import { getAsk } from './utils/react.js';
 
 const customClass = 'ch-utils-postPreview';
 const customAttribute = 'data-smartPostPreview';
 
 const editorSelector = `.flex-row:has(.co-post-composer):not([${customAttribute}])`;
+const askSelector = '[data-testid="composer-context"] [data-testid^="ask-"] article';
 const projectButtonSelector = '.co-post-composer > .co-thread-header button[data-headlessui-state]';
 const headlineInputSelector = '.co-editable-body[name="headline"]';
 let bodySelector = '[data-headlessui-state] > div > .flex-col:has([data-drop-target-for-external])';
@@ -19,7 +21,7 @@ const managedHandles = managedProjects.map(({ handle }) => handle);
 
 let v1 = false;
 
-const previewWindow = (editor, headline, body) => {
+const previewWindow = (editor, headline, body, ask) => {
   const blocks = body && (Array.from(body.children));
   const tags = Array.from(editor.querySelectorAll(tagButtonSelector)).map(mapTags);
   const selectedProjectHandle = editor.querySelector(projectButtonSelector).textContent.trim();
@@ -53,6 +55,7 @@ const previewWindow = (editor, headline, body) => {
                 children: [headline]
               }]
             },
+            typeof ask !== 'undefined' ? embeddedAsk(ask) : null,
             {
               tag: 'div',
               id: 'postPreview-body',
@@ -159,14 +162,43 @@ const formatHeader = project => noact({
 });
 const formatMarkdown = markdown => noact({
   className: 'co-prose prose my-4 overflow-hidden break-words px-3',
-  innerHTML: parseMd(markdown)
+  innerHTML: displayPrefs.disableEmbeds ? parseMd(markdown) : parseMdEmbed(markdown)
 });
 const formatTags = tags => tags.map(({ icon, tag }) => noact({ tag: 'span', className: 'mr-2 inline-block text-sm', children: [icon, tag] }));
+const formatAudio = figure => {
+  const audio = figure.querySelector('audio');
+  const src = audio.src;
+  const identifier = src.split('/').pop();
+  const duration = audio.duration;
+  const artistInput = figure.querySelector('input[name="artist"]');
+  const trackInput = figure.querySelector('input:not([name="artist"])');
+  artistInput.addEventListener('input', ({ target: { value } }) => {
+    const field = document.getElementById(`${identifier}-artist`);
+    const caption = document.getElementById(`${identifier}-caption`);
+    if (field && caption) {
+      field.innerText = value;
+      caption.innerText = `${value} - ${trackInput.value}`;
+    }
+  });
+  trackInput.addEventListener('input', ({ target: { value } }) => {
+    const field = document.getElementById(`${identifier}-track`);
+    const caption = document.getElementById(`${identifier}-caption`);
+    if (field && caption) {
+      field.innerText = value;
+      caption.innerText = `${artistInput.value} - ${value}`;
+    }
+  });
+  
+  return audioPlayer(src, duration, trackInput.value, artistInput.value);
+}
 
 const wrapImg = img => {return { className: 'group relative w-full flex-initial', children: [img] }};
 const mapBlocks = block => {
+  console.log(block)
   const textarea = block.querySelector('textarea:not([placeholder="headline"])');
   const imgs = Array.from(block.querySelectorAll('img')).map(img => img.cloneNode(true));
+  const audioV1 = Array.from(block.querySelectorAll('figure:has(audio)')).map(audio => formatAudio(audio));
+  const audioV2 = block.matches('figure:has(audio)') ? formatAudio(block) : null;
 
   if (textarea) return formatMarkdown(textarea.value);
   else if (imgs.length) {
@@ -183,7 +215,8 @@ const mapBlocks = block => {
       });
       return rows.map(noact);
     }
-  }
+  } else if (audioV1.length) return audioV1;
+  else if (audioV2) return audioV2;
   else return null;
 };
 const mapTags = b => {
@@ -206,7 +239,6 @@ const updateBody = body => {
 const updateTags = () => document.getElementById('postPreview-tags').replaceChildren(...formatTags(Array.from(document.querySelectorAll('.co-editable-body:has(input[id*="downshift"]) .co-filled-button')).map(mapTags)));
 
 const updateHandler = new MutationObserver(mutations => {
-  console.log(mutations);
   const projectMutation = mutations.find(({ type, target }) => type === 'characterData' && target.parentNode.matches(projectButtonSelector) && managedHandles.includes(target.textContent.trim()));
   const headlineMutation = mutations.find(({ type, target }) => type === 'childList' && target.matches(headlineInputSelector));
   const bodyMutation = mutations.find(({ type, target }) => type === 'childList' && target.closest(bodySelector));
@@ -218,17 +250,21 @@ const updateHandler = new MutationObserver(mutations => {
   tagMutation && (updateTags());
 });
 
-const addPreview = editors => {
+const addPreview = async editors => {
   for (const editor of editors) {
     if (!editor.querySelector('[data-drop-target-for-external]')) {
       v1 = true;
       bodySelector = '[data-headlessui-state] > div > .flex-col:has(.co-editable-body)';
     }
-    
+
+    let ask;
+    const askBox = document.querySelector(askSelector);
+    askBox && (ask = await getAsk(askBox));
+
     editor.setAttribute(customAttribute, '');
     const headlineInput = editor.querySelector(headlineInputSelector);
     let body = editor.querySelector(bodySelector);
-    editor.append(previewWindow(editor, headlineInput.value, body));
+    editor.append(previewWindow(editor, headlineInput.value, body, ask));
 
     updateHandler.observe(editor.querySelector('article'), { childList: true, subtree: true, characterData: true });
   }

@@ -1,6 +1,7 @@
 import { noact } from './noact.js';
 import { activeProject } from './user.js';
 import { apiFetch, batchTrpc, followState } from './apiFetch.js';
+import { parseMd } from './markdown.js';
 
 export const avatar8 = project => noact({
   className: 'flex-0 mask relative aspect-square h-8 w-8 inline-block',
@@ -145,7 +146,7 @@ const bookmarkOrUnbookmarkRequest = async (state, tagName) => apiFetch(`/v1/trpc
   body: JSON.stringify({
     0 : { tagName }
   })
-})
+});
 export const tagCard = async (customClass, tag) => {
   const bookmarked = await bookmarkState(tag);
   return noact({
@@ -168,6 +169,336 @@ export const tagCard = async (customClass, tag) => {
           });
         },
         children: [`${bookmarked ? 'un' : ''}bookmark this tag`]
+      }
+    ]
+  });
+};
+
+export const embeddedAsk = ask => noact({
+  className: 'co-embedded-ask m-3 grid grid-cols-[2rem_1fr] grid-rows-[2rem_1fr] gap-x-3 gap-y-2 rounded-lg border p-3',
+  dataset: { askid: ask.askId },
+  children: [
+    avatar8(ask.askingProject),
+    {
+      tag: 'span',
+      className: 'co-attribution col-start-2 row-start-1 align-middle leading-8',
+      children: [
+        {
+          className: 'font-bold hover:underline',
+          href: `/${ask.askingProject.handle}`,
+          tabindex: 0,
+          target: '_blank',
+          children: [`@${ask.askingProject.handle} asked: `]
+        }
+      ]
+    },
+    {
+      className: 'co-prose prose col-start-2 row-start-2',
+      innerHTML: parseMd(ask.content)
+    }
+  ]
+});
+
+const playIcon = () => noact({
+  fill: 'none',
+  viewBox: '0 0 24 24',
+  'stroke-width': 1.5,
+  stroke: 'currentColor',
+  'aria-hidden': true,
+  className: 'm-auto h-9 w-9',
+  children: [
+    {
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    },
+    {
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z'
+    }
+  ]
+});
+const pauseIcon = () => noact({
+  fill: 'none',
+  viewBox: '0 0 24 24',
+  'stroke-width': 1.5,
+  stroke: 'currentColor',
+  'aria-hidden': true,
+  className: 'm-auto h-9 w-9',
+  children: [
+    {
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'M14.25 9v6m-4.5 0V9M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    }
+  ]
+});
+const volumeIcon = id => noact({
+  id,
+  className: 'h-6 w-6 volume-icon',
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  'stroke-width': 1.5,
+  stroke: 'currentColor',
+  dataset: { muted: '', volume: 3 },
+  children: [
+    {
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'm 8.01296,8.89281 c 0,0 -1.21949,2.90009 0,6.21439 M 12.1382,4.74989 8.01558,8.89281 H 4.2434 c -0.55164,0 -0.9934,0.4345 -0.9934,0.9737 v 4.26699 c 0,0.5392 0.44176,0.9737 0.9934,0.9737 h 3.77218 l 4.12262,4.1429 z'
+    },
+    {
+      className: 'volume-1',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'm 14.096542,10.165673 c 0.826195,0.221388 1.400713,0.970094 1.400665,1.825377 3.4e-5,0.855341 -0.57447,1.604011 -1.400642,1.825384'
+    },
+    {
+      className: 'volume-2',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'm 15.350183,8.3377038 c 1.652392,0.4427716 2.801345,1.9401262 2.801331,3.6507512 -1.8e-5,1.710632 -1.148936,3.208015 -2.80128,3.65076'
+    },
+    {
+      className: 'volume-3',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'm 16.739362,6.5123739 c 2.478504,0.6641052 4.201889,2.9101157 4.20191,5.4760801 2e-5,2.565964 -1.723406,4.812026 -4.201923,5.476143'
+    },
+    {
+      className: 'volume-mute',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      d: 'm 17.6196,10.25 c -3.5169,3.5169 -3.5,3.5 -3.5,3.5 m 0,-3.5 c 3.5169,3.5169 3.5,3.5 3.5,3.5'
+    },
+  ]
+});
+export const audioPlayer = (src, preloadDuration = false, track = '', artist = 'unknown artist') => {
+  let playstate;
+  let frameId;
+
+  const identifier = src.split('/').pop();
+  !track && (track = identifier);
+  const audio = noact({
+    tag: 'audio',
+    src,
+    preload: 'metadata',
+    className: 'w-full p-2',
+    dataset: { testid: 'audio' },
+    tabindex: -1,
+    children: [{
+      href: src,
+      tabindex: -1,
+      children: ['download audio']
+    }],
+  });
+  const formatDuration = duration => {
+    const ss = String(duration % 60).padStart(2, '0');
+    const mm = String(Math.floor(duration / 60)).padStart(2, '0');
+    const hh = duration >= 3600 ? String(Math.floor(duration / 3600)).padStart(2, '0') : null;
+    return [hh, mm, ss].filter(t => t !== null).join(':');
+  };
+  const showDuration = () => {
+    const { duration } = audio;
+    const durationString = formatDuration(Math.floor(duration));
+  
+    document.getElementById(`${identifier}-range`).max = duration;
+    document.getElementById(`${identifier}-end`).innerText = durationString;
+  };
+  const togglePlayState = () => {
+    if (playstate) {
+      audio.pause();
+      playstate = 0;
+      document.getElementById(`${identifier}-playbutton`).replaceChildren(playIcon());
+      cancelAnimationFrame(frameId);
+    } else {
+      audio.play();
+      playstate = 1;
+      document.getElementById(`${identifier}-playbutton`).replaceChildren(pauseIcon());
+      frameId = requestAnimationFrame(playback);
+    }
+  };
+  const seekInput = ({ target: { value } }) => {
+    document.getElementById(`${identifier}-start`).innerText = formatDuration(Math.floor(value));
+    !audio.paused && (cancelAnimationFrame(frameId));
+  };
+  const seekChange = ({ target: { value } }) => {
+    audio.currentTime = value;
+    !audio.paused && (requestAnimationFrame(playback));
+  };
+  const playback = () => {
+    document.getElementById(`${identifier}-start`).innerText = formatDuration(Math.floor(audio.currentTime));
+    document.getElementById(`${identifier}-range`).value = audio.currentTime;
+    if (audio.ended) {
+      togglePlayState();
+      return;
+    } else frameId = requestAnimationFrame(playback);
+  };
+
+  if (!preloadDuration) {
+    if (audio.readyState > 0) showDuration();
+    else audio.addEventListener('loadedmetadata', showDuration);
+  };
+
+  return noact({
+    tag: 'figure',
+    className: 'group relative w-full flex-initial',
+    children: [
+      {
+        id: `${identifier}-caption`,
+        tag: 'figcaption',
+        className: 'sr-only',
+        children: [`${artist} - ${track}`]
+      },
+      audio,
+      {
+        className: 'flex flex-row',
+        children: [
+          {
+            id: `${identifier}-playbutton`,
+            type: 'button',
+            onclick: togglePlayState,
+            className: 'w-[76px] bg-cherry flex-shrink-0 flex-grow',
+            title: 'play',
+            tabindex: 0,
+            children: [playIcon()]
+          },
+          {
+            className: 'flex w-full flex-col bg-notBlack p-2',
+            children: [
+              {
+                className: 'flex flex-row gap-4',
+                children: [
+                  {
+                    id: `${identifier}-track`,
+                    className: 'flex-1',
+                    children: [track]
+                  },
+                  {
+                    className: 'relative',
+                    children: [
+                      {
+                        id: `${identifier}-volState`,
+                        className: 'volume-state cursor-pointer',
+                        dataset: { state: '' },
+                        onclick: function () {
+                          this.dataset.state ? this.dataset.state = '' : this.dataset.state = 'open';
+                        },
+                        children: volumeIcon(`${identifier}-volDisplay`)
+                      },
+                      {
+                        className: 'volume-controls absolute top-0 bg-cherry rounded-lg right-0 h-10 w-52 p-1 justify-between items-center',
+                        onmouseout: function () {
+                          setTimeout(() => {
+                            !(this.matches(':hover')) && (document.getElementById(`${identifier}-volState`).dataset.state = "");
+                          }, 150)
+                        },
+                        children: [
+                          {
+                            className: 'cursor-pointer',
+                            onclick: () => {
+                              if (audio.muted) {
+                                document.getElementById(`${identifier}-volDisplay`).dataset.muted = '';
+                                document.getElementById(`${identifier}-volControl`).dataset.muted = '';
+                                audio.muted = false;
+                              } else {
+                                document.getElementById(`${identifier}-volDisplay`).dataset.muted = 'muted';
+                                document.getElementById(`${identifier}-volControl`).dataset.muted = 'muted';
+                                audio.muted = true;
+                              }
+                            },
+                            children: volumeIcon(`${identifier}-volControl`),
+                          },
+                          {
+                            id: `${identifier}-volInput`,
+                            className: 'audio-controls mx-1 flex-1 accent-mango w-36',
+                            tag: 'input',
+                            type: 'range',
+                            min: 0,
+                            max: 1,
+                            step: 'any',
+                            value: audio.volume,
+                            oninput: ({ target: { value } }) => {
+                              audio.volume = value;
+                              document.getElementById(`${identifier}-volOutput`).innerText = String(Math.floor(value * 100)).padStart(2, '0');
+                              const level = Math.min(Math.floor(value * 4), 3);
+                              document.getElementById(`${identifier}-volDisplay`).dataset.volume = level;
+                              document.getElementById(`${identifier}-volControl`).dataset.volume = level;
+                            }
+                          },
+                          {
+                            id: `${identifier}-volOutput`,
+                            className: 'text-xs tabular-nums w-6',
+                            style: 'text-align:end',
+                            tag: 'output',
+                            children: String(Math.floor(audio.volume * 100)).padStart(2, '0')
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    href: src,
+                    download: '',
+                    title: 'download',
+                    tabindex: 0,
+                    children: [{
+                      fill: 'none',
+                      viewBox: '0 0 24 24',
+                      'stroke-width': 1.5,
+                      stroke: 'currentColor',
+                      'aria-hidden': true,
+                      className: 'm-auto h-6 w-6',
+                      children: [
+                        {
+                          'stroke-linecap': 'round',
+                          'stroke-linejoin': 'round',
+                          d: 'M12 9.75v6.75m0 0l-3-3m3 3l3-3m-8.25 6a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z'
+                        }
+                      ]
+                    }]
+                  }
+                ]
+              },
+              {
+                id: `${identifier}-artist`,
+                className: 'text-xs',
+                children: [artist]
+              },
+              {
+                className: 'flex flex-row items-center',
+                children: [
+                  {
+                    tag: 'div',
+                    id: `${identifier}-start`,
+                    className: 'text-xs tabular-nums',
+                    children: ['00:00']
+                  },
+                  {
+                    id: `${identifier}-range`,
+                    tag: 'input',
+                    type: 'range',
+                    className: 'audio-controls mx-1 flex-1 accent-mango',
+                    min: 0,
+                    max: preloadDuration ? preloadDuration : 1,
+                    step: 'any',
+                    value: 0,
+                    oninput: seekInput,
+                    onchange: seekChange,
+                    tabindex: 0
+                  },
+                  {
+                    tag: 'div',
+                    id: `${identifier}-end`,
+                    className: 'text-xs tabular-nums',
+                    children: [preloadDuration ? formatDuration(Math.floor(preloadDuration)) : '00:00']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   });
