@@ -1,0 +1,96 @@
+{
+  "name": "cssTweaks",
+  "title": "css tweaks",
+  "description": "a collection of css tweaks by @kiophen",
+  "preferences": {
+    "enabled": true,
+    "options": {
+      "compactComment": {
+        "value": false,
+        "type": "toggle",
+        "name": "compact comment",
+        "tooltip": "Space-efficient comments"
+      },
+      "compactTimeline": {
+        "value": false,
+        "type": "toggle",
+        "name": "compact timeline",
+        "tooltip": "Less Padding -- Trim down padding on the timeline"
+      },
+      "stickySidebar": {
+        "value": false,
+        "type": "toggle",
+        "name": "sticky sidebar",
+        "tooltip": "Make sidebar stick to screen"
+      },
+      "spaceEfficiency": {
+        "value": false,
+        "type": "toggle",
+        "name": "space efficiency",
+        "tooltip": "Better Layout - For vertical displays or half-monitor windows"
+      },
+      "lowercaseTags": {
+        "value": false,
+        "type": "toggle",
+        "name": "lowercase tags",
+        "tooltip": "Force hashtags to be lowercase"
+      },
+      "betterProfiles": {
+        "value": false,
+        "type": "toggle",
+        "name": "profiles tweaks",
+        "tooltip": "Profile page bio tweaks"
+      },
+      "commentInputResize": {
+        "value": false,
+        "type": "toggle",
+        "name": "comment input resize",
+        "tooltip": "Enable resizing on comment text editor"
+      },
+      "hideChorner": {
+        "value": false,
+        "type": "toggle",
+        "name": "hide chorner",
+        "tooltip": "Hide \"The Cohost Corner\""
+      },
+      "hideHide": {
+        "value": false,
+        "type": "toggle",
+        "name": "hide hide",
+        "tooltip": "Hide the \"hide x posts\" button on long reblog chains"
+      },
+      "hideNames": {
+        "value": false,
+        "type": "toggle",
+        "name": "hide names",
+        "tooltip": "Hide display names in posts"
+      },
+      "hideHandles": {
+        "value": false,
+        "type": "toggle",
+        "name": "hide handles",
+        "tooltip": "Hide @username handles in posts"
+      },
+      "timestamp": {
+        "value": false,
+        "type": "toggle",
+        "name": "hide timestamp",
+        "tooltip": "Turn timestamps into a permalink icon (🔗)"
+      },
+      "squareAvatars": {
+        "value": false,
+        "type": "toggle",
+        "name": "square avatars",
+        "tooltip": "become square: everyone"
+      },
+      "commentColor": {
+        "value": "#888888",
+        "type": "text",
+        "name": "comment color",
+        "tooltip": "if 'compact comments' is enabled: sets color of comment bar"
+      }
+    }
+  },
+  "js": true,
+  "css": true
+}
